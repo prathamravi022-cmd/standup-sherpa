@@ -1,7 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import { AudioLines, Command, Database, GitBranch, LayoutDashboard, Menu, Mic2, Radio, Sparkles, X } from 'lucide-react'
+import { AudioLines, Command, GitBranch, LayoutDashboard, Menu, Mic2, Radio, Sparkles, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { AuthStatus } from '@/components/auth-status'
@@ -11,7 +11,6 @@ const primaryLinks = [
   { href: '/', label: 'Voice hub', icon: Mic2 },
   { href: '/team', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/how-it-works', label: 'How it works', icon: Sparkles },
-  { href: '/data', label: 'Source data', icon: Database },
   { href: '/about', label: 'About', icon: Radio },
 ]
 
@@ -44,17 +43,9 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="site-frame" onPointerMove={(event) => {
-      if (event.pointerType !== 'mouse') return
-      event.currentTarget.style.setProperty('--pointer-x', `${event.clientX}px`)
-      event.currentTarget.style.setProperty('--pointer-y', `${event.clientY}px`)
-    }}>
+    <div className="site-frame">
       <div className="ambient-field" aria-hidden="true">
         <div className="ambient-image" />
-        <div className="ambient-glow" />
-        <div className="soundwave soundwave-one" />
-        <div className="soundwave soundwave-two" />
-        <div className="star-field" />
       </div>
       <header className="site-header">
         <div className="header-inner">

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type FormEvent } from 'react'
 import { motion } from 'framer-motion'
-import { Activity, AlertTriangle, Archive, ArrowRight, BarChart3, Check, CheckCircle2, ChevronRight, Circle, Clock3, Database, Mail, MoreHorizontal, Phone, Plus, Sparkles, Users, Workflow } from 'lucide-react'
+import { Activity, AlertTriangle, Archive, ArrowRight, BarChart3, Check, CheckCircle2, ChevronRight, Circle, Clock3, Mail, MoreHorizontal, Phone, Plus, Sparkles, Users, Workflow } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { archiveTeamMember, addTeamMember, saveTeamUpdate } from '@/lib/team-actions'
@@ -233,7 +233,7 @@ export function TeamDashboard({ members, updates, currentUser }: TeamDashboardPr
         })}</div>
       )}
 
-      <div className="dashboard-bottom-links"><Link href="/data"><Database /> Inspect sample source data <ChevronRight /></Link><Link href="/how-it-works"><Workflow /> How the briefing is built <ChevronRight /></Link></div>
+      <div className="dashboard-bottom-links"><Link href="/how-it-works"><Workflow /> How the briefing is built <ChevronRight /></Link></div>
     </div>
   )
 }
