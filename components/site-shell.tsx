@@ -1,20 +1,17 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import { AudioLines, Command, GitBranch, LayoutDashboard, Menu, Mic2, Radio, Sparkles, X } from 'lucide-react'
+import { AudioLines, Command, Database, GitBranch, LayoutDashboard, Menu, Mic2, Radio, Sparkles, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 
 const primaryLinks = [
   { href: '/', label: 'Voice hub', icon: Mic2 },
-  { href: '/features', label: 'Features', icon: Sparkles },
   { href: '/team', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/how-it-works', label: 'How it works', icon: Sparkles },
+  { href: '/data', label: 'Source data', icon: Database },
   { href: '/about', label: 'About', icon: Radio },
-]
-const extraLinks = [
-  { href: '/how-it-works', label: 'How it works' },
-  { href: '/data', label: 'Source data' },
 ]
 
 export function SiteShell({ children }: { children: React.ReactNode }) {
@@ -46,8 +43,13 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="site-frame">
+    <div className="site-frame" onPointerMove={(event) => {
+      if (event.pointerType !== 'mouse') return
+      event.currentTarget.style.setProperty('--pointer-x', `${event.clientX}px`)
+      event.currentTarget.style.setProperty('--pointer-y', `${event.clientY}px`)
+    }}>
       <div className="ambient-field" aria-hidden="true">
+        <div className="ambient-image" />
         <div className="ambient-glow" />
         <div className="soundwave soundwave-one" />
         <div className="soundwave soundwave-two" />
@@ -65,12 +67,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                 {label}
               </Link>
             ))}
-            <div className="nav-more">
-              <button type="button" className="nav-link nav-more-button" aria-haspopup="true">Explore <span className="nav-chevron">⌄</span></button>
-              <div className="nav-dropdown">
-                {extraLinks.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}
-              </div>
-            </div>
+
           </nav>
           <div className="header-actions">
             <button className="command-trigger" type="button" onClick={() => setPaletteOpen(true)} aria-label="Open command menu">
@@ -86,7 +83,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       <AnimatePresence>
         {menuOpen && (
           <motion.nav className="mobile-nav" aria-label="Mobile navigation" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-            {[...primaryLinks, ...extraLinks].map((link) => (
+            {primaryLinks.map((link) => (
               <Link key={link.href} href={link.href} onClick={closeOverlays}>{link.label}</Link>
             ))}
           </motion.nav>
@@ -101,8 +98,8 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       </main>
       <footer className="site-footer">
         <div className="footer-inner">
-          <span className="footer-demo"><span className="status-dot" /> Demo environment · Connected to sample data</span>
-          <span className="footer-credit">A calmer start to every engineering day <span className="alexa-badge">Powered by Alexa+</span></span>
+          <span className="footer-demo"><span className="status-dot" /> Private workspace · your team data stays yours</span>
+          <span className="footer-credit">A calmer start to every engineering day <span className="alexa-badge">Powered by Groq</span></span>
         </div>
       </footer>
       <AnimatePresence>
