@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { AudioLines, Command, Database, GitBranch, LayoutDashboard, Menu, Mic2, Radio, Sparkles, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { AuthStatus } from '@/components/auth-status'
 import { useCallback, useEffect, useState } from 'react'
 
 const primaryLinks = [
@@ -70,6 +71,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
 
           </nav>
           <div className="header-actions">
+            <AuthStatus />
             <button className="command-trigger" type="button" onClick={() => setPaletteOpen(true)} aria-label="Open command menu">
               <Command aria-hidden="true" /><span>Quick jump</span><kbd>⌘ K</kbd>
             </button>
@@ -108,7 +110,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             <motion.div className="command-palette" role="dialog" aria-modal="true" aria-labelledby="palette-title" initial={{ opacity: 0, y: 14, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }}>
               <div className="palette-heading"><div><span className="eyebrow">Navigate</span><h2 id="palette-title">Jump to a destination</h2></div><kbd>ESC</kbd></div>
               <div className="palette-options">
-                {[...primaryLinks.map(({ href, label, icon: Icon }) => ({ href, label, icon: Icon })), ...extraLinks.map(({ href, label }) => ({ href, label, icon: Radio }))].map(({ href, label, icon: Icon }, index) => (
+                {primaryLinks.map(({ href, label, icon: Icon }, index) => (
                   <button key={href} type="button" className="palette-option" onClick={() => navigate(href)}><span className="palette-option-icon"><Icon /></span><span>{label}</span><kbd>{index + 1}</kbd></button>
                 ))}
               </div>

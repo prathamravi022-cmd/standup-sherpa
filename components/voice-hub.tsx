@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowUpRight, AudioLines, Check, CircleHelp, Copy, GitBranch, Mic, MicOff, Pause, Play, Send, Sparkles, Volume2, VolumeX, Zap } from 'lucide-react'
+import { ArrowUpRight, AudioLines, Check, CircleHelp, Copy, GitBranch, Mic, MicOff, Pause, Play, Send, Sparkles, Users, Volume2, VolumeX, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { VoiceOrb } from '@/components/voice-orb'
+import Link from 'next/link'
 
 type OrbState = 'idle' | 'listening' | 'processing' | 'done'
 type Briefing = { yesterday: string[]; today: string[]; blockers: string[] }
@@ -27,45 +28,62 @@ interface SpeechRecognitionLike {
 }
 
 const examples = ['“Alexa, prep my standup”', '“Hey Sherpa”', '“Computer, standup”', '“Mera standup prep karo”']
-const defaultBriefing: Briefing = {
-  yesterday: ['Merged checkout retry logic in PR #482', 'Closed 3 review comments on the billing refactor'],
-  today: ['Finish payment edge-case tests · ENG-214', 'Review the notifications API proposal · ENG-229'],
-  blockers: [],
-}
-
 export function VoiceHub() {
   const [voiceState, setVoiceState] = useState<OrbState>('idle')
   const [command, setCommand] = useState('')
   const [transcript, setTranscript] = useState('')
   const [briefing, setBriefing] = useState<Briefing | null>(null)
+  const [latencyMs, setLatencyMs] = useState<number | null>(null)
+  const [nextStep, setNextStep] = useState<'sign-in' | 'dashboard' | null>(null)
   const [copied, setCopied] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [muted, setMuted] = useState(false)
   const [speed, setSpeed] = useState(1)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const spaceActiveRef = useRef(false)
   const voiceStateRef = useRef<OrbState>('idle')
   const recognizedTextRef = useRef('')
 
-  const generateBriefing = useCallback((value: string) => {
+  const generateBriefing = useCallback(async (value: string) => {
     const normalized = value.trim()
     if (!normalized) return
     setCommand(normalized)
     setTranscript(`“${normalized}”`)
+    setNextStep(null)
+    setLatencyMs(null)
     voiceStateRef.current = 'processing'
     setVoiceState('processing')
     setBriefing(null)
-    if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(() => {
-      setBriefing(defaultBriefing)
+
+    try {
+      const response = await fetch('/api/briefing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: normalized }),
+      })
+      const payload = await response.json() as { briefing?: Briefing; latencyMs?: number; error?: string }
+      if (!response.ok || !payload.briefing) {
+        setTranscript(payload.error ?? 'Could not prepare your briefing. Please try again.')
+        if (response.status === 401) setNextStep('sign-in')
+        if (response.status === 422) setNextStep('dashboard')
+        voiceStateRef.current = 'idle'
+        setVoiceState('idle')
+        return
+      }
+      setBriefing(payload.briefing)
+      setLatencyMs(payload.latencyMs ?? null)
       voiceStateRef.current = 'done'
       setVoiceState('done')
-    }, 680)
+    } catch {
+      setTranscript('Could not reach the briefing service. Please try again.')
+      voiceStateRef.current = 'idle'
+      setVoiceState('idle')
+    }
   }, [])
 
   const startListening = useCallback(() => {
     if (voiceStateRef.current === 'listening') return
+    recognizedTextRef.current = ''
     const SpeechAPI = window.SpeechRecognition ?? window.webkitSpeechRecognition
     if (!SpeechAPI) {
       setTranscript('Voice recognition is not available in this browser. Try a typed command instead.')
@@ -138,7 +156,6 @@ export function VoiceHub() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
-      if (timerRef.current) clearTimeout(timerRef.current)
       recognitionRef.current?.stop()
       window.speechSynthesis?.cancel()
     }
@@ -161,7 +178,8 @@ export function VoiceHub() {
       setIsSpeaking(false)
       return
     }
-    const summary = briefing ? [...briefing.yesterday, ...briefing.today, ...briefing.blockers].join('. ') : 'Your standup is ready to prepare. Yesterday, checkout retry logic was merged. Today, finish payment edge case tests and review the notifications API proposal. No blockers reported.'
+    if (!briefing) return
+    const summary = [...briefing.yesterday, ...briefing.today, ...briefing.blockers].join('. ')
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel()
       const utterance = new SpeechSynthesisUtterance(summary)
@@ -173,7 +191,8 @@ export function VoiceHub() {
   }
 
   const copyBriefing = async () => {
-    const data = briefing ?? defaultBriefing
+    if (!briefing) return
+    const data = briefing
     const markdown = `*Yesterday:*\n${data.yesterday.map((item) => `• ${item}`).join('\n')}\n\n*Today:*\n${data.today.map((item) => `• ${item}`).join('\n')}\n\n*Blockers:*\n${data.blockers.length ? data.blockers.map((item) => `• ${item}`).join('\n') : 'None reported'}`
     try {
       await navigator.clipboard.writeText(markdown)
@@ -190,7 +209,7 @@ export function VoiceHub() {
         <div className="hero-copy">
           <div className="hero-kicker"><span className="kicker-line" /> YOUR ENGINEERING MORNING, IN SYNC <span className="kicker-line" /></div>
           <h1 id="home-heading">Walk into standup <span>ready.</span></h1>
-          <p className="hero-subtitle">Speak a command — your commits and tickets become<br className="desktop-break" /> Yesterday, Today and Blockers in seconds.</p>
+          <p className="hero-subtitle">Speak a command — your saved team updates become<br className="desktop-break" /> a clear, source-grounded standup briefing.</p>
         </div>
 
         <div className="voice-interaction">
@@ -207,6 +226,7 @@ export function VoiceHub() {
           </div>
           <p className="mic-instruction">{voiceState === 'listening' ? 'Listening now. Speak naturally, then pause.' : voiceState === 'processing' ? 'Pulling your work together…' : 'Tap the mic or hold Spacebar and speak'}</p>
           <AnimatePresence mode="wait"><motion.p key={transcript || 'empty'} className={`live-transcript ${transcript ? 'has-transcript' : ''}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>{transcript || ' '}</motion.p></AnimatePresence>
+          {nextStep && <Link className="briefing-next-step" href={nextStep === 'sign-in' ? '/auth/sign-in' : '/team'}>{nextStep === 'sign-in' ? 'Sign in to continue' : 'Open your team dashboard'} <ArrowUpRight /></Link>}
           <div className="example-prompts" aria-label="Try a voice command">
             {examples.map((example) => <button key={example} type="button" onClick={() => generateBriefing(example.replace(/[“”]/g, ''))}>{example}</button>)}
           </div>
@@ -222,7 +242,7 @@ export function VoiceHub() {
       <AnimatePresence>
         {briefing && (
           <motion.section className="briefing-panel glass-panel" aria-label="Your standup briefing" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }} transition={{ duration: 0.35 }}>
-            <div className="briefing-topline"><div><span className="eyebrow">TODAY · ENGINEERING</span><h2>Your standup is ready</h2></div><div className="briefing-meta"><span className="latency-pill"><Zap /> Generated in 420ms</span><button type="button" className="icon-action" onClick={speakSummary} aria-label={isSpeaking ? 'Pause voice summary' : 'Play voice summary'}>{isSpeaking ? <Pause /> : <Play />}</button><button type="button" className="icon-action" onClick={() => { setSpeed((current) => current >= 2 ? 1 : current + 0.25) }} aria-label={`Playback speed ${speed}x`}>{speed.toFixed(speed % 1 ? 2 : 0)}x</button><button type="button" className="icon-action" onClick={() => setMuted((value) => { const next = !value; if (next) { window.speechSynthesis?.cancel(); setIsSpeaking(false) } return next })} aria-label={muted ? 'Unmute audio' : 'Mute audio'}>{muted ? <VolumeX /> : <Volume2 />}</button></div></div>
+            <div className="briefing-topline"><div><span className="eyebrow">TODAY · ENGINEERING</span><h2>Your standup is ready</h2></div><div className="briefing-meta"><span className="latency-pill"><Zap /> {latencyMs === null ? 'Generated from saved updates' : `Generated in ${latencyMs}ms via Groq`}</span><button type="button" className="icon-action" onClick={speakSummary} aria-label={isSpeaking ? 'Pause voice summary' : 'Play voice summary'}>{isSpeaking ? <Pause /> : <Play />}</button><button type="button" className="icon-action" onClick={() => { setSpeed((current) => current >= 2 ? 1 : current + 0.25) }} aria-label={`Playback speed ${speed}x`}>{speed.toFixed(speed % 1 ? 2 : 0)}x</button><button type="button" className="icon-action" onClick={() => setMuted((value) => { const next = !value; if (next) { window.speechSynthesis?.cancel(); setIsSpeaking(false) } return next })} aria-label={muted ? 'Unmute audio' : 'Mute audio'}>{muted ? <VolumeX /> : <Volume2 />}</button></div></div>
             <div className="briefing-columns">
               <BriefingColumn label="Yesterday" icon={<GitBranch />} items={briefing.yesterday} accent="blue" />
               <BriefingColumn label="Today" icon={<Sparkles />} items={briefing.today} accent="violet" />
@@ -233,11 +253,11 @@ export function VoiceHub() {
         )}
       </AnimatePresence>
       <div className="home-proof-row">
-        <div className="proof-item"><span className="proof-icon"><GitBranch /></span><span><strong>GitHub + GitLab</strong><small>PRs, commits & reviews</small></span></div>
+        <div className="proof-item"><span className="proof-icon"><Users /></span><span><strong>Private roster</strong><small>Workspace-scoped members</small></span></div>
         <div className="proof-divider" />
-        <div className="proof-item"><span className="proof-icon jira-icon">J</span><span><strong>Jira + Linear</strong><small>Sprint-aware context</small></span></div>
+        <div className="proof-item"><span className="proof-icon"><Check /></span><span><strong>Saved daily reports</strong><small>History stays in your workspace</small></span></div>
         <div className="proof-divider" />
-        <div className="proof-item"><span className="proof-icon"><MicOff /></span><span><strong>Built for async</strong><small>No meeting required</small></span></div>
+        <div className="proof-item"><span className="proof-icon"><MicOff /></span><span><strong>Source-grounded</strong><small>No invented blockers</small></span></div>
       </div>
     </div>
   )

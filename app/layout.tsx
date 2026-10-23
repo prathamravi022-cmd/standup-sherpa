@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     default: 'Standup Sherpa — Walk into standup ready',
     template: '%s · Standup Sherpa',
   },
-  description: 'Your commits, tickets, and blockers — shaped into a clear daily standup with a voice-first engineering assistant.',
+  description: 'Prepare source-grounded standups, manage a private engineering roster, and track daily team updates in one voice-first workspace.',
   generator: 'v0.app',
   applicationName: 'Standup Sherpa',
   icons: {
