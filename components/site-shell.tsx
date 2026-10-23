@@ -1,7 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import { AudioLines, Command, GitBranch, LayoutDashboard, Menu, Mic2, Radio, Sparkles, X } from 'lucide-react'
+import { AudioLines, Command, GitBranch, LayoutDashboard, Menu, Mic2, Sparkles, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { AuthStatus } from '@/components/auth-status'
@@ -11,7 +11,6 @@ const primaryLinks = [
   { href: '/', label: 'Voice hub', icon: Mic2 },
   { href: '/team', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/how-it-works', label: 'How it works', icon: Sparkles },
-  { href: '/about', label: 'About', icon: Radio },
 ]
 
 export function SiteShell({ children }: { children: React.ReactNode }) {
